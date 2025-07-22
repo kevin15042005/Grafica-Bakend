@@ -1,5 +1,6 @@
 import express from 'express';
 import { GoogleSpreadsheet } from 'google-spreadsheet';
+import { google } from 'googleapis';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -14,10 +15,15 @@ const sheets = {
 async function obtenerDatos(sheetId) {
   const doc = new GoogleSpreadsheet(sheetId);
 
-  await doc.useJwtAuth({
-    client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-    private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-  });
+  const jwtClient = new google.auth.JWT(
+    process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+    null,
+    process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    ['https://www.googleapis.com/auth/spreadsheets']
+  );
+
+  await jwtClient.authorize();
+  await doc.useOAuth2Client(jwtClient);
 
   await doc.loadInfo();
   const sheet = doc.sheetsByIndex[0];
