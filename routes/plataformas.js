@@ -1,6 +1,5 @@
 import express from 'express';
 import { GoogleSpreadsheet } from 'google-spreadsheet';
-import { JWT } from 'google-auth-library';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -12,16 +11,15 @@ const sheets = {
   vendors: '14uGWQ2tskK5zYUsVaMZkdWpqoHjFX76ClRzocmtqSKA',
 };
 
-const auth = new JWT({
-  email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-  key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-  scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-});
-
 async function obtenerDatos(sheetId) {
   const doc = new GoogleSpreadsheet(sheetId);
-  // Usa la autenticación JWT
-  await doc.useJWTClient(auth);
+
+  // Autenticación con cuenta de servicio
+  await doc.useServiceAccountAuth({
+    client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+    private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+  });
+
   await doc.loadInfo();
   const sheet = doc.sheetsByIndex[0];
   const rows = await sheet.getRows();

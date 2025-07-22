@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Evitar cache para datos siempre frescos
+// Evita caché para datos siempre frescos
 app.use((req, res, next) => {
   res.set('Cache-Control', 'no-store');
   next();
