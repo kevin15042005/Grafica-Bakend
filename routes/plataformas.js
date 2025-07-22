@@ -14,9 +14,9 @@ const sheets = {
 async function obtenerDatos(sheetId) {
   const doc = new GoogleSpreadsheet(sheetId);
 
-  await doc.useServiceAccountAuth({
-    clientEmail: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-    privateKey: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+  await doc.useJwtAuth({
+    client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+    private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
   });
 
   await doc.loadInfo();
