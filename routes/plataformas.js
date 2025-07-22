@@ -1,3 +1,4 @@
+// backend/routes/plataformas.js
 import express from "express";
 import XLSX from "xlsx";
 import path from "path";
@@ -33,7 +34,6 @@ const analizarArchivo = (rutaArchivo) => {
       else if (celda === "EN PROCESO") naranja++;
       else if (celda === "DEFINIENDO RESPONSABLE") azul++;
       else if (celda === "INHABILITADA") rojoOscuro++;
-      else if (!celda || celda === "") rojo++;
       else rojo++;
     }
 
@@ -54,7 +54,7 @@ const analizarArchivo = (rutaArchivo) => {
   return resultados;
 };
 
-router.get("/porcentajes", (req, res) => {
+router.get("/", (req, res) => {
   try {
     const archivo1 = path.join("excel", "Inhouse-Grafica.xlsx");
     const archivo2 = path.join("excel", "Vendors-Grafica.xlsx");
