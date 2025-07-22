@@ -11,15 +11,9 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('excel')); // Servir archivos Excel directamente
 
-// Middleware para actualización en tiempo real
+// Configuración para evitar caché
 app.use((req, res, next) => {
-  // Forzar actualización de los archivos Excel antes de cada solicitud
-  ['Inhouse-Grafica.xlsx', 'Vendors-Grafica.xlsx'].forEach(file => {
-    const filePath = path.join('excel', file);
-    if (fs.existsSync(filePath)) {
-      fs.utimesSync(filePath, new Date(), new Date());
-    }
-  });
+  res.set('Cache-Control', 'no-store');
   next();
 });
 
