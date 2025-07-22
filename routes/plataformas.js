@@ -1,89 +1,50 @@
 import express from 'express';
-import XLSX from 'xlsx';
-import path from 'path';
-import fs from 'fs';
+import { GoogleSpreadsheet } from 'google-spreadsheet';
+import { JWT } from 'google-auth-library';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const router = express.Router();
 
-const MAX_CASILLAS = 9; // Máximo de casillas a evaluar
-
-const procesarArchivo = (rutaArchivo, tipo) => {
-  try {
-    const workbook = XLSX.readFile(rutaArchivo);
-    const hoja = workbook.Sheets[workbook.SheetNames[0]];
-    const datos = XLSX.utils.sheet_to_json(hoja, { header: 1 });
-
-    return datos.slice(1).map(fila => {
-      // Tomar solo las primeras 9 columnas (casillas)
-      const celdas = fila.slice(1, MAX_CASILLAS + 1);
-      const totalRelevantes = celdas.filter(c => 
-        c !== null && c !== undefined && c !== ''
-      ).length;
-      
-      const verde = celdas.filter(c => c === 1 || c === "1").length;
-      
-      // Cálculo preciso del porcentaje
-      const porcentaje = totalRelevantes > 0 
-        ? Math.min(100, Math.round((verde / totalRelevantes) * 10000) / 100)
-        : 0;
-
-      return {
-        plataforma: fila[0],
-        tipo,
-        porcentaje,
-        verde,
-        amarillo: celdas.filter(c => c === 0 || c === "0").length,
-        naranja: celdas.filter(c => c === "EN PROCESO").length,
-        azul: celdas.filter(c => c === "DEFINIENDO RESPONSABLE").length,
-        rojo: celdas.filter(c => 
-          ![1, "1", 0, "0", "EN PROCESO", "DEFINIENDO RESPONSABLE"].includes(c)
-        ).length,
-        totalCasillas: totalRelevantes
-      };
-    });
-  } catch (error) {
-    console.error(`Error procesando archivo ${rutaArchivo}:`, error);
-    return [];
-  }
+const sheets = {
+  inhouse: '1lfSUqhjeaCj24XoM_lPu4JZlUAZCqm71UZRf4aBa7Zg',
+  vendors: '14uGWQ2tskK5zYUsVaMZkdWpqoHjFX76ClRzocmtqSKA',
 };
 
-// Ruta para verificar cambios
-router.get('/verificar-actualizacion', (req, res) => {
+const auth = new JWT({
+  email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+  key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+  scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+});
+
+async function obtenerDatos(sheetId) {
+  const doc = new GoogleSpreadsheet(sheetId);
+  // Usa la autenticación JWT
+  await doc.useJWTClient(auth);
+  await doc.loadInfo();
+  const sheet = doc.sheetsByIndex[0];
+  const rows = await sheet.getRows();
+  return rows.map(row => row.toObject());
+}
+
+router.get('/inhouse', async (req, res) => {
   try {
-    const archivos = {
-      inhouse: path.join('excel', 'Inhouse-Grafica.xlsx'),
-      vendor: path.join('excel', 'Vendors-Grafica.xlsx')
-    };
-    
-    const resultados = {};
-    for (const [tipo, archivo] of Object.entries(archivos)) {
-      resultados[tipo] = {
-        existe: fs.existsSync(archivo),
-        modificado: fs.existsSync(archivo) ? fs.statSync(archivo).mtimeMs : 0
-      };
-    }
-    
-    res.json(resultados);
+    const datos = await obtenerDatos(sheets.inhouse);
+    res.json(datos);
   } catch (error) {
-    res.status(500).json({ error: 'Error verificando archivos' });
+    console.error('Error al obtener datos inhouse:', error);
+    res.status(500).json({ error: 'Error al obtener datos inhouse' });
   }
 });
 
-router.get('/:tipo', (req, res) => {
+router.get('/vendors', async (req, res) => {
   try {
-    const tipo = req.params.tipo.toLowerCase();
-    const archivo = path.join('excel', 
-      tipo === 'inhouse' ? 'Inhouse-Grafica.xlsx' : 'Vendors-Grafica.xlsx');
-    
-    if (!fs.existsSync(archivo)) {
-      return res.status(404).json({ error: `Archivo no encontrado para ${tipo}` });
-    }
-
-    const resultados = procesarArchivo(archivo, tipo);
-    res.json(resultados);
-  } catch (err) {
-    console.error(`Error procesando ${req.params.tipo}:`, err);
-    res.status(500).json({ error: `Error al procesar ${req.params.tipo}` });
+    const datos = await obtenerDatos(sheets.vendors);
+    res.json(datos);
+  } catch (error) {
+    console.error('Error al obtener datos vendors:', error);
+    res.status(500).json({ error: 'Error al obtener datos vendors' });
   }
 });
 
