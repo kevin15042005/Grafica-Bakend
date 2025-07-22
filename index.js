@@ -11,15 +11,14 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Evitar cache para que siempre traiga datos actualizados
+// Evita caché
 app.use((req, res, next) => {
   res.set('Cache-Control', 'no-store');
   next();
 });
 
-// Rutas
 app.use('/porcentajes', plataformasRouter);
 
 app.listen(PORT, () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`);
+  console.log(`✅ Servidor corriendo en http://localhost:${PORT}`);
 });

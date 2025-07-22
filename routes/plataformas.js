@@ -1,29 +1,22 @@
 import express from 'express';
 import { GoogleSpreadsheet } from 'google-spreadsheet';
-import { google } from 'googleapis';
 import dotenv from 'dotenv';
 
 dotenv.config();
-
 const router = express.Router();
 
 const sheets = {
-  inhouse: '1lfSUqhjeaCj24XoM_lPu4JZlUAZCqm71UZRf4aBa7Zg',
-  vendors: '14uGWQ2tskK5zYUsVaMZkdWpqoHjFX76ClRzocmtqSKA',
+  inhouse: process.env.GOOGLE_SHEET_ID_INHOUSE,
+  vendors: process.env.GOOGLE_SHEET_ID_VENDORS,
 };
 
 async function obtenerDatos(sheetId) {
   const doc = new GoogleSpreadsheet(sheetId);
 
-  const jwtClient = new google.auth.JWT(
-    process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-    null,
-    process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-    ['https://www.googleapis.com/auth/spreadsheets']
-  );
-
-  await jwtClient.authorize();
-  await doc.useOAuth2Client(jwtClient);
+  await doc.useServiceAccountAuth({
+    client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+    private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+  });
 
   await doc.loadInfo();
   const sheet = doc.sheetsByIndex[0];
@@ -36,7 +29,7 @@ router.get('/inhouse', async (req, res) => {
     const datos = await obtenerDatos(sheets.inhouse);
     res.json(datos);
   } catch (error) {
-    console.error('Error al obtener datos inhouse:', error);
+    console.error('❌ Error al obtener datos inhouse:', error.message);
     res.status(500).json({ error: 'Error al obtener datos inhouse' });
   }
 });
@@ -46,7 +39,7 @@ router.get('/vendors', async (req, res) => {
     const datos = await obtenerDatos(sheets.vendors);
     res.json(datos);
   } catch (error) {
-    console.error('Error al obtener datos vendors:', error);
+    console.error('❌ Error al obtener datos vendors:', error.message);
     res.status(500).json({ error: 'Error al obtener datos vendors' });
   }
 });
