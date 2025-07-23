@@ -1,24 +1,40 @@
 import express from 'express';
 import cors from 'cors';
+import { leerDatosPorTipo } from './sheetReader.js';
 import dotenv from 'dotenv';
-import plataformasRouter from './routes/plataformas.js';
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const port = process.env.PORT || 8080;
 
+// Middlewares
 app.use(cors());
 app.use(express.json());
 
-// Evita caché
-app.use((req, res, next) => {
-  res.set('Cache-Control', 'no-store');
-  next();
+// Endpoint
+app.get('/porcentajes/:tipo', async (req, res) => {
+  try {
+    const tipo = req.params.tipo.toLowerCase();
+    
+    if (!['inhouse', 'vendor'].includes(tipo)) {
+      return res.status(400).json({ 
+        error: 'Tipo inválido. Usar "inhouse" o "vendor"' 
+      });
+    }
+
+    const datos = await leerDatosPorTipo(tipo);
+    res.json(datos);
+  } catch (error) {
+    console.error('❌ Error en el endpoint:', error);
+    res.status(500).json({ 
+      error: 'Error interno del servidor',
+      detalle: error.message 
+    });
+  }
 });
 
-app.use('/porcentajes', plataformasRouter);
-
-app.listen(PORT, () => {
-  console.log(`✅ Servidor corriendo en http://localhost:${PORT}`);
+// Iniciar servidor
+app.listen(port, () => {
+  console.log(`🚀 Servidor listo en http://localhost:${port}`);
 });
