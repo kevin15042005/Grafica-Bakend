@@ -16,14 +16,15 @@ app.use(express.json());
 app.get('/porcentajes/:tipo', async (req, res) => {
   try {
     const tipo = req.params.tipo.toLowerCase();
-    
+    const dueño = req.query.dueño || null; 
+
     if (!['inhouse', 'vendor'].includes(tipo)) {
       return res.status(400).json({ 
         error: 'Tipo inválido. Usar "inhouse" o "vendor"' 
       });
     }
 
-    const datos = await leerDatosPorTipo(tipo);
+    const datos = await leerDatosPorTipo(tipo, dueño);
     res.json(datos);
   } catch (error) {
     console.error('❌ Error en el endpoint:', error);

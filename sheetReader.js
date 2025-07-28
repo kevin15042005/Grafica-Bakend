@@ -15,7 +15,7 @@ const COLUMNAS_RELEVANTES = [
   "SLAs Proveedor"
 ];
 
-async function leerDatosPorTipo(tipo) {
+async function leerDatosPorTipo(tipo, filtroDueño = null) {
   try {
     const sheetId = tipo === "inhouse" 
       ? process.env.GOOGLE_SHEET_ID_INHOUSE
@@ -32,45 +32,50 @@ async function leerDatosPorTipo(tipo) {
     await doc.loadInfo();
     const sheet = doc.sheetsByIndex[0];
     
-    // Cargar encabezados y filas de manera diferente
+    // Cargar encabezados y filas
     const rows = await sheet.getRows();
-    console.log('🔍 Total de filas:', rows.length);
     
     if (rows.length === 0) {
       console.warn('⚠️ No se encontraron filas con datos');
       return [];
     }
 
-    // Procesar cada fila
-    const resultado = rows.map((row, index) => {
-      // Obtener valores de manera más confiable
-      const nombrePlataforma = row.get('Plataforma')?.trim() || "Sin nombre";
-      
-      // Contar columnas completadas
-      let completadas = 0;
-      const detalle = COLUMNAS_RELEVANTES.map((col) => {
-        const valor = row.get(col)?.toString().trim();
-        const completada = valor === "1" || valor?.toUpperCase() === "TRUE";
-        if (completada) completadas++;
+    // Procesar y filtrar filas
+    const resultado = rows
+      .map((row) => {
+        const nombrePlataforma = row.get('Plataforma')?.trim() || "Sin nombre";
+        const dueño = (row.get('Dueño')?.trim().toUpperCase() || "NO ASIGNADO"; // Aseguramos mayúsculas
         
+        // Contar columnas completadas
+        let completadas = 0;
+        const detalle = COLUMNAS_RELEVANTES.map((col) => {
+          const valor = row.get(col)?.toString().trim();
+          const completada = valor === "1" || valor?.toUpperCase() === "TRUE";
+          if (completada) completadas++;
+          
+          return {
+            nombre: col,
+            completada
+          };
+        });
+
+        const porcentaje = Math.round((completadas / COLUMNAS_RELEVANTES.length) * 100);
+        let color = porcentaje >= 66 ? "verde" : porcentaje >= 33 ? "amarillo" : "rojo";
+
         return {
-          nombre: col,
-          completada
+          plataforma: nombrePlataforma,
+          dueño, // Ya está en mayúsculas
+          porcentaje,
+          color,
+          completadas,
+          totalColumnas: COLUMNAS_RELEVANTES.length,
+          detalle
         };
-      });
-
-      const porcentaje = Math.round((completadas / COLUMNAS_RELEVANTES.length) * 100);
-      let color = porcentaje >= 66 ? "verde" : porcentaje >= 33 ? "amarillo" : "rojo";
-
-      return {
-        plataforma: nombrePlataforma,
-        porcentaje,
-        color,
-        completadas,
-        totalColumnas: COLUMNAS_RELEVANTES.length,
-        detalle
-      };
-    });
+      })
+      .filter(item => 
+        !filtroDueño || 
+        item.dueño.includes(filtroDueño.toUpperCase().trim()) // Búsqueda en mayúsculas
+      );
 
     return resultado;
   } catch (error) {
