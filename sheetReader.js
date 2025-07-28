@@ -44,7 +44,7 @@ async function leerDatosPorTipo(tipo, filtroDueño = null) {
     const resultado = rows
       .map((row) => {
         const nombrePlataforma = row.get('Plataforma')?.trim() || "Sin nombre";
-        const dueño = (row.get('Dueño')?.trim().toUpperCase() || "NO ASIGNADO"; // Aseguramos mayúsculas
+        const dueño = (row.get('Dueño')?.trim().toUpperCase()) || "NO ASIGNADO"; // Corregido el paréntesis
         
         // Contar columnas completadas
         let completadas = 0;
@@ -64,7 +64,7 @@ async function leerDatosPorTipo(tipo, filtroDueño = null) {
 
         return {
           plataforma: nombrePlataforma,
-          dueño, // Ya está en mayúsculas
+          dueño,
           porcentaje,
           color,
           completadas,
@@ -74,7 +74,7 @@ async function leerDatosPorTipo(tipo, filtroDueño = null) {
       })
       .filter(item => 
         !filtroDueño || 
-        item.dueño.includes(filtroDueño.toUpperCase().trim()) // Búsqueda en mayúsculas
+        item.dueño.includes(filtroDueño.toUpperCase().trim())
       );
 
     return resultado;
