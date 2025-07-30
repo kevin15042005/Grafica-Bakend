@@ -12,14 +12,15 @@ const COLUMNAS_RELEVANTES = [
   "Matriz de Perfilamiento",
   "Ola Datacenter",
   "Rutina de Mantenimiento",
-  "SLAs Proveedor"
+  "SLAs Proveedor",
 ];
 
 async function leerDatosPorTipo(tipo, filtroDueño = null) {
   try {
-    const sheetId = tipo === "inhouse" 
-      ? process.env.GOOGLE_SHEET_ID_INHOUSE
-      : process.env.GOOGLE_SHEET_ID_VENDOR;
+    const sheetId =
+      tipo === "inhouse"
+        ? process.env.GOOGLE_SHEET_ID_INHOUSE
+        : process.env.GOOGLE_SHEET_ID_VENDOR;
 
     // Autenticación
     const serviceAccountAuth = new JWT({
@@ -31,36 +32,40 @@ async function leerDatosPorTipo(tipo, filtroDueño = null) {
     const doc = new GoogleSpreadsheet(sheetId, serviceAccountAuth);
     await doc.loadInfo();
     const sheet = doc.sheetsByIndex[0];
-    
+
     // Cargar encabezados y filas
     const rows = await sheet.getRows();
-    
+
     if (rows.length === 0) {
-      console.warn('⚠️ No se encontraron filas con datos');
+      console.warn("⚠️ No se encontraron filas con datos");
       return [];
     }
 
     // Procesar y filtrar filas
     const resultado = rows
       .map((row) => {
-        const nombrePlataforma = row.get('Plataforma')?.trim() || "Sin nombre";
-        const dueño = (row.get('Dueño')?.trim().toUpperCase()) || "NO ASIGNADO"; // Corregido el paréntesis
-        
+        const nombrePlataforma = row.get("Plataforma")?.trim() || "Sin nombre";
+        const dueño = row.get("Dueño")?.trim().toUpperCase() || "NO ASIGNADO"; // Corregido el paréntesis
+
         // Contar columnas completadas
         let completadas = 0;
         const detalle = COLUMNAS_RELEVANTES.map((col) => {
           const valor = row.get(col)?.toString().trim();
-          const completada = valor === "1" || valor?.toUpperCase() === "TRUE";
+          const completada = valor && valor !== "0" && valor.trim() !== "";
           if (completada) completadas++;
-          
+
           return {
             nombre: col,
-            completada
+            completada,
+            estado: valor,
           };
         });
 
-        const porcentaje = Math.round((completadas / COLUMNAS_RELEVANTES.length) * 100);
-        let color = porcentaje >= 66 ? "verde" : porcentaje >= 33 ? "amarillo" : "rojo";
+        const porcentaje = Math.round(
+          (completadas / COLUMNAS_RELEVANTES.length) * 100
+        );
+        let color =
+          porcentaje >= 66 ? "verde" : porcentaje >= 33 ? "amarillo" : "rojo";
 
         return {
           plataforma: nombrePlataforma,
@@ -69,12 +74,12 @@ async function leerDatosPorTipo(tipo, filtroDueño = null) {
           color,
           completadas,
           totalColumnas: COLUMNAS_RELEVANTES.length,
-          detalle
+          detalle,
         };
       })
-      .filter(item => 
-        !filtroDueño || 
-        item.dueño.includes(filtroDueño.toUpperCase().trim())
+      .filter(
+        (item) =>
+          !filtroDueño || item.dueño.includes(filtroDueño.toUpperCase().trim())
       );
 
     return resultado;
