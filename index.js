@@ -9,11 +9,10 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 8080;
 
-// Middlewares
 app.use(cors());
 app.use(express.json());
 
-// Endpoint para porcentajes (inhouse / vendor)
+// Endpoint porcentajes (inhouse / vendor)
 app.get('/porcentajes/:tipo', async (req, res) => {
   try {
     const tipo = req.params.tipo.toLowerCase();
@@ -36,13 +35,13 @@ app.get('/porcentajes/:tipo', async (req, res) => {
   }
 });
 
-// Endpoint para calendario
+// Endpoint calendario
 app.get('/calendario', async (req, res) => {
   try {
     const eventos = await leerCalendario();
     res.json(eventos);
   } catch (error) {
-    console.error('❌ Error en el endpoint calendario:', error);
+    console.error('❌ Error en /calendario:', error);
     res.status(500).json({
       error: 'Error interno del servidor',
       detalle: error.message
@@ -50,7 +49,6 @@ app.get('/calendario', async (req, res) => {
   }
 });
 
-// Iniciar servidor
 app.listen(port, () => {
   console.log(`🚀 Servidor listo en http://localhost:${port}`);
 });
