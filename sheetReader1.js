@@ -8,7 +8,7 @@ dotenv.config();
 async function leerCalendario() {
   try {
     const sheetId = process.env.GOOGLE_SHEET_ID_CALENDARIO;
-
+    
     const serviceAccountAuth = new JWT({
       email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
       key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
@@ -17,22 +17,20 @@ async function leerCalendario() {
 
     const doc = new GoogleSpreadsheet(sheetId, serviceAccountAuth);
     await doc.loadInfo();
-
-    const sheet = doc.sheetsByIndex[0];
+    
+    // Asegúrate de usar el nombre correcto de la hoja
+    const sheet = doc.sheetsByTitle["Calendario"] || doc.sheetsByIndex[0];
     const rows = await sheet.getRows();
 
-    if (rows.length === 0) {
-      console.warn("⚠️ No hay datos en el calendario");
-      return [];
-    }
-
-    const eventos = rows.map((row) => ({
-      plataforma: row.get("Plataforma")?.trim() || "Sin plataforma",
-      fecha: row.get("Fecha") || null,
-      descripcion: row.get("Descipcion")?.trim() || "", // corregido
+    return rows.map((row) => ({
+      title: row.get("Plataforma") || "Evento sin título",
+      start: row.get("Fecha de Reunion") || new Date().toISOString(),
+      end: row.get("Fecha de Finalización") || null, // Opcional
+      description: row.get("Descripcion") || "",
+      // Puedes añadir más campos si necesitas
+      color: row.get("Color") || "#3a87ad" // Color opcional
     }));
 
-    return eventos;
   } catch (error) {
     console.error("❌ Error leyendo calendario:", error);
     return [];
