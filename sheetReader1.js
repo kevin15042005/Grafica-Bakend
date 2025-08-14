@@ -3,6 +3,7 @@ import { GoogleSpreadsheet } from "google-spreadsheet";
 import { JWT } from "google-auth-library";
 import dotenv from "dotenv";
 dotenv.config();
+//Completado
 
 async function leerCalendario() {
   try {

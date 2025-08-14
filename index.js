@@ -12,6 +12,8 @@ const port = process.env.PORT || 8080;
 app.use(cors());
 app.use(express.json());
 
+
+//Completado
 // Endpoint porcentajes (inhouse / vendor)
 app.get('/porcentajes/:tipo', async (req, res) => {
   try {
