@@ -15,6 +15,7 @@ const COLUMNAS_RELEVANTES = [
   "SLAs Proveedor",
 ];
 
+// ---------- FUNCIONES EXISTENTES ----------
 async function leerDatosPorTipo(tipo, filtroDueño = null) {
   try {
     const sheetId =
@@ -22,7 +23,6 @@ async function leerDatosPorTipo(tipo, filtroDueño = null) {
         ? process.env.GOOGLE_SHEET_ID_INHOUSE
         : process.env.GOOGLE_SHEET_ID_VENDOR;
 
-    // Autenticación
     const serviceAccountAuth = new JWT({
       email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
       key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
@@ -32,8 +32,6 @@ async function leerDatosPorTipo(tipo, filtroDueño = null) {
     const doc = new GoogleSpreadsheet(sheetId, serviceAccountAuth);
     await doc.loadInfo();
     const sheet = doc.sheetsByIndex[0];
-
-    // Cargar encabezados y filas
     const rows = await sheet.getRows();
 
     if (rows.length === 0) {
@@ -41,24 +39,18 @@ async function leerDatosPorTipo(tipo, filtroDueño = null) {
       return [];
     }
 
-    // Procesar y filtrar filas
     const resultado = rows
       .map((row) => {
         const nombrePlataforma = row.get("Plataforma")?.trim() || "Sin nombre";
-        const dueño = row.get("Dueño")?.trim().toUpperCase() || "NO ASIGNADO"; // Corregido el paréntesis
+        const dueño = row.get("Dueño")?.trim().toUpperCase() || "NO ASIGNADO";
 
-        // Contar columnas completadas
         let completadas = 0;
         const detalle = COLUMNAS_RELEVANTES.map((col) => {
           const valor = row.get(col)?.toString().trim();
           const completada = valor && valor !== "0" && valor.trim() !== "";
           if (completada) completadas++;
 
-          return {
-            nombre: col,
-            completada,
-            estado: valor,
-          };
+          return { nombre: col, completada, estado: valor };
         });
 
         const porcentaje = Math.round(
@@ -89,4 +81,31 @@ async function leerDatosPorTipo(tipo, filtroDueño = null) {
   }
 }
 
-export { leerDatosPorTipo };
+// ---------- NUEVA FUNCIÓN PARA EL CALENDARIO ----------
+async function leerCalendario() {
+  try {
+    const sheetId = process.env.GOOGLE_SHEET_ID_CALENDARIO; // Lo pones en .env
+
+    const serviceAccountAuth = new JWT({
+      email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+      scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+    });
+
+    const doc = new GoogleSpreadsheet(sheetId, serviceAccountAuth);
+    await doc.loadInfo();
+    const sheet = doc.sheetsByTitle["Calendario"]; // Nombre exacto de la hoja
+    const rows = await sheet.getRows();
+
+    return rows.map((row) => ({
+      plataforma: row.get("Plataforma") || "",
+      fecha: row.get("Fecha de Reunion") || "",
+      descripcion: row.get("Descripcion") || "",
+    }));
+  } catch (error) {
+    console.error("❌ Error leyendo calendario:", error);
+    return [];
+  }
+}
+
+export { leerDatosPorTipo, leerCalendario };
