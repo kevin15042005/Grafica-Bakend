@@ -21,16 +21,21 @@ async function leerCalendario() {
 
     return rows.map((row) => {
       // Convierte formato de fecha de "21/08/2025" a "2025-08-21"
-      const fechaParts = row.get("Fecha")?.split('/');
-      const fechaISO = fechaParts?.length === 3 
-        ? `${fechaParts[2]}-${fechaParts[1].padStart(2, '0')}-${fechaParts[0].padStart(2, '0')}`
-        : null;
+      const fechaParts = row.get("Fecha")?.split("/");
+      const fechaISO =
+        fechaParts?.length === 3
+          ? `${fechaParts[2]}-${fechaParts[1].padStart(
+              2,
+              "0"
+            )}-${fechaParts[0].padStart(2, "0")}`
+          : null;
 
       return {
         title: row.get("Plataforma") || "Evento sin título",
-        start: fechaISO || new Date().toISOString().split('T')[0],
-        description: row.get("Descipcion") || "", // Nota: Hay un typo "Descipcion"
-        color: "#3a87ad" // Color azul por defecto
+        start: fechaISO || new Date().toISOString().split("T")[0],
+        description: row.get("Descipcion") || "", 
+        dueño: row.get("Dueño") || "NO ASIGNADO", 
+        color: "#3a87ad",
       };
     });
   } catch (error) {
