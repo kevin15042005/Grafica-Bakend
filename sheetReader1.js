@@ -3,7 +3,6 @@ import { GoogleSpreadsheet } from "google-spreadsheet";
 import { JWT } from "google-auth-library";
 import dotenv from "dotenv";
 dotenv.config();
-//Completado 100%
 
 async function leerCalendario() {
   try {
@@ -20,22 +19,29 @@ async function leerCalendario() {
     const rows = await sheet.getRows();
 
     return rows.map((row) => {
-      // Convierte formato de fecha de "21/08/2025" a "2025-08-21"
+      // Convierte formato de fecha dd/mm/yyyy -> yyyy-mm-dd
       const fechaParts = row.get("Fecha")?.split("/");
       const fechaISO =
         fechaParts?.length === 3
-          ? `${fechaParts[2]}-${fechaParts[1].padStart(
-              2,
-              "0"
-            )}-${fechaParts[0].padStart(2, "0")}`
+          ? `${fechaParts[2]}-${fechaParts[1].padStart(2, "0")}-${fechaParts[0].padStart(2, "0")}`
           : null;
+
+      // Leer estado
+      const estado = row.get("Estado") ? parseInt(row.get("Estado")) : null;
+
+      // Determinar color según estado
+      let color = "#999"; // default gris
+      if (estado === 1) color = "green";     // Culminado
+      else if (estado === 0) color = "red";  // No culminado
+      else if (estado === 2) color = "orange"; // En proceso
 
       return {
         title: row.get("Plataforma") || "Evento sin título",
         start: fechaISO || new Date().toISOString().split("T")[0],
-        description: row.get("Descipcion") || "", 
+        description: row.get("Descripcion") || "", 
         dueño: row.get("Dueño") || "NO ASIGNADO", 
-        color: "#3a87ad",
+        estado: estado,
+        color: color,
       };
     });
   } catch (error) {
